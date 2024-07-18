@@ -1,46 +1,27 @@
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
-const mongoose = require('mongoose');
 
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
 
-// Connect to MongoDB
-mongoose.connect('mongodb://localhost/chat-app', {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
+app.get('/', (req, res) => {
+  res.sendFile(__dirname + '/index.html');
 });
-
-const messageSchema = new mongoose.Schema({
-    username: String,
-    message: String,
-    timestamp: { type: Date, default: Date.now }
-});
-
-const Message = mongoose.model('Message', messageSchema);
 
 io.on('connection', (socket) => {
-    console.log('a user connected');
-    
-    // Send all previous messages to the new user
-    Message.find().then(messages => {
-        socket.emit('previousMessages', messages);
-    });
-
-    // Listen for incoming messages
-    socket.on('chatMessage', (msg) => {
-        const message = new Message({ username: msg.username, message: msg.message });
-        message.save().then(() => {
-            io.emit('chatMessage', msg);
-        });
-    });
-
-    socket.on('disconnect', () => {
-        console.log('user disconnected');
-    });
+  console.log('A user connected');
+  socket.on('disconnect', () => {
+    console.log('User disconnected');
+  });
+  socket.on('chat message', (msg) => {
+    console.log('Message received:', msg);  // Debug log
+    io.emit('chat message', msg);
+  });
 });
 
-app.get('/', (req, res) => {
-    res.sendFile(__dirname + '/index
+const port = process.env.PORT || 3000;
+server.listen(port, () => {
+  console.log(`Listening on *:${port}`);
+});
